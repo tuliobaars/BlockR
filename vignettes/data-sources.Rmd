@@ -1,0 +1,135 @@
+---
+title: "Data sources and the data contract"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data sources and the data contract}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(BlockR)
+```
+
+## The pipeline
+
+```
+ source ──► ingest_adam() ──► validate_adam() ──► preprocess_adam() ──► cache ──► app
+ (raw ADaM)   read raw data     data contract       analysis datasets    memory + disk
+```
+
+`load_blockr_data()` runs the pipeline and returns the 12 analysis-ready
+datasets, from cache whenever possible.
+
+## Three data sources
+
+### Bundled (default)
+
+The pre-generated synthetic datasets shipped with *random.cdisc.data*
+(`cadsl`, `cadae`, ...). Fast, and always the same data.
+
+```{r, eval = FALSE}
+raw <- ingest_adam("bundled")
+```
+
+### Freshly generated synthetic data
+
+Generated with the `random.cdisc.data::rad*()` functions. Choose the number
+of subjects and the seed; extra arguments can be passed to each generator.
+
+```{r, eval = FALSE}
+raw <- ingest_adam(
+  "synthetic",
+  synthetic = list(
+    N = 200,                                  # subjects
+    seed = 7,                                 # change for a new draw
+    args = list(ADAE = list(max_n_aes = 5))   # per-dataset rad*() arguments
+  )
+)
+```
+
+With `seed = NA` a random seed is drawn once per session, printed in the
+console and stored in option `blockr.synthetic`, so the app and its "Show R
+code" always use the same draw.
+
+### Parquet files
+
+Point `parquet_dir` at a folder with one file per dataset: `adsl.parquet`,
+`adae.parquet`, ... (or `adsl_adam.parquet`, ...; case-insensitive). Other files
+are ignored; extra ADaM datasets are read but reported as unused. Needs the
+*arrow* package.
+
+```{r, eval = FALSE}
+raw <- ingest_adam("parquet", parquet_dir = "path/to/adam")
+```
+
+`export_adam_parquet()` writes data in that layout, e.g. to freeze a synthetic
+draw:
+
+```{r, eval = FALSE}
+export_adam_parquet(ingest_adam("synthetic", list(N = 200, seed = 7)), "cache")
+run_app(source = "parquet", parquet_dir = "cache")
+```
+
+## The data contract
+
+Every source is checked right after ingestion, so data problems are reported
+before the app starts instead of failing inside a module. The contract lists
+the datasets and columns the app needs:
+
+```{r}
+names(adam_contract())
+adam_contract()$ADTTE
+```
+
+`validate_adam()` stops with the full list of problems (missing datasets or
+columns, empty datasets, an ADSL with more than one row per subject) and
+warns about subjects that have no ADSL record.
+
+The app's modules also pre-select some values (e.g. the overall survival
+parameter `OS`). With real data these may not exist; `check_app_defaults()`
+warns about each missing one, so you know which defaults to adjust:
+
+```{r}
+adam_app_defaults()[[1]]
+```
+
+## Readable adverse event names
+
+*random.cdisc.data* codes the adverse event hierarchy with placeholders
+(`"dcd A.1.1.1.1"`). Pre-processing replaces them with illustrative
+MedDRA-style names; the mapping is one-to-one per level, so no AE groups are
+merged and all counts are unchanged. Real MedDRA terms pass through untouched.
+
+```{r}
+head(ae_dictionary(), 4)
+decode_ae_terms(data.frame(AEDECOD = c("dcd A.1.1.1.1", "dcd D.1.1.4.2", "Headache")))
+```
+
+## Caching
+
+`load_blockr_data()` uses the first valid cache:
+
+1. **session memory** - instant for repeated launches in one R session;
+2. **disk** - `blockr_adam.rds` in `tools::R_user_dir("BlockR", "cache")`
+   (option `blockr.cache_dir`);
+3. **fresh build** - then cached.
+
+The cache is rebuilt automatically when the package version or any
+data-producing function changes, or when the source changes (source type,
+synthetic settings, *random.cdisc.data* version, or a parquet file's name,
+size or modification time). Force a rebuild with `refresh = TRUE` (option
+`blockr.refresh_cache`) or clear everything with `blockr_clear_cache()`.
+
+## Switching to real study data
+
+1. Export the ADaM datasets as parquet (`adsl.parquet`, ...) into one folder.
+2. `run_app(source = "parquet", parquet_dir = "that/folder")`.
+3. Fix anything `validate_adam()` reports; review the warnings of
+   `check_app_defaults()` and adjust the module defaults if needed.
+4. Run the test suite (`devtools::test()`); the data invariants run on every
+   data scenario (see `vignette("development", package = "BlockR")`).

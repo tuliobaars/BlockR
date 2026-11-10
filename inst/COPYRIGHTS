@@ -1,0 +1,14 @@
+BlockR bundles the following third-party files:
+
+inst/www/fonts/InterVariable.woff2
+  Inter, Copyright (c) 2016 The Inter Project Authors.
+  SIL Open Font License, Version 1.1 (see inst/www/fonts/OFL.txt).
+
+inst/www/fonts/JetBrainsMonoNL-Regular.woff2, inst/www/fonts/JetBrainsMonoNL-Bold.woff2
+  JetBrains Mono, Copyright 2020 The JetBrains Mono Project Authors.
+  SIL Open Font License, Version 1.1 (see inst/www/fonts/OFL.txt).
+
+The fonts were subset and converted to WOFF2 with fontTools (see
+vignette("development", package = "BlockR")); no glyphs were altered.
+
+All other files: MIT License, Copyright (c) 2026 blockr authors.

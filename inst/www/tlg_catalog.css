@@ -1,0 +1,202 @@
+/*
+ * TLG Catalog pages: structure and a neutral look (Bootstrap variables only).
+ * A list pane on the left (search, sections, one row per output) and a detail
+ * pane on the right (toolbar with title and actions, then the output).
+ * The blockr look restyles these classes (blockr.css, section 13);
+ * with options(blockr.style = FALSE) this neutral look is used as is.
+ */
+
+.tn-tlg { padding: 0 0 1rem; }
+.tn-icon { flex: none; display: inline-block; vertical-align: -0.2em; }
+
+/* ---- Layout --------------------------------------------------------------- */
+.tn-tlg-window {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  min-height: min(78vh, 900px);
+}
+@media (max-width: 900px) {
+  .tn-tlg-window { grid-template-columns: minmax(0, 1fr); }
+  .tn-tlg-sidebar { position: static !important; max-height: 22rem !important; }
+}
+
+/* ---- List pane ------------------------------------------------------------ */
+.tn-tlg-sidebar {
+  position: sticky;
+  top: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  max-height: calc(100vh - 1.5rem);
+  padding: 1rem .625rem .75rem;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+}
+.tn-tlg-sidebar-head { padding: 0 .5rem; }
+.tn-tlg-heading { margin: 0; font-size: 1.375rem; font-weight: 600; line-height: 1.25; }
+.tn-tlg-sub { margin: .25rem 0 0; color: var(--bs-secondary-color); font-size: .8125rem; }
+
+.tn-tlg-search-wrap { position: relative; margin: 0 .125rem; color: var(--bs-secondary-color); }
+.tn-tlg-search-wrap .tn-icon { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.tn-tlg-search {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 .75rem 0 2.1rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: .875rem;
+}
+.tn-tlg-search:focus { outline: 2px solid var(--bs-primary); outline-offset: 1px; }
+
+.tn-tlg-list { overflow-y: auto; min-height: 0; flex: 1 1 auto; padding: 0 .125rem; scrollbar-width: thin; }
+.tn-tlg-group + .tn-tlg-group { margin-top: .875rem; }
+.tn-tlg-group-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: .25rem .625rem .375rem;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+.tn-tlg-group-count { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.tn-tlg-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .625rem;
+  width: 100%;
+  padding: .45rem .625rem;
+  margin: 1px 0;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+  color: var(--bs-body-color);
+  text-align: left;
+  line-height: 1.3;
+  cursor: pointer;
+}
+.tn-tlg-item:hover { background: rgba(var(--bs-emphasis-color-rgb), .05); }
+.tn-tlg-item:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: 0; }
+.tn-tlg-item-icon { color: var(--bs-primary); padding-top: 1px; }
+.tn-tlg-item-text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.tn-tlg-item-id { font-size: .8125rem; font-weight: 600; }
+.tn-tlg-item-title {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: .78rem;
+  color: var(--bs-secondary-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tn-tlg-item.active { background: var(--bs-primary); color: #fff; }
+.tn-tlg-item.active .tn-tlg-item-icon,
+.tn-tlg-item.active .tn-tlg-item-title { color: rgba(255, 255, 255, .88); }
+.tn-tlg-item[hidden], .tn-tlg-group[hidden] { display: none; }
+
+.tn-tlg-sidebar-foot { padding: .5rem .625rem .125rem; font-size: .75rem; color: var(--bs-secondary-color); border-top: 1px solid var(--bs-border-color); }
+.tn-tlg-sidebar-foot a { color: inherit; font-weight: 500; }
+
+/* ---- Detail pane ------------------------------------------------------------ */
+.tn-tlg-main {
+  min-width: 0;
+  padding: 1rem 1.5rem 1.5rem;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+}
+.tn-tlg-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem 1.25rem;
+  padding: .375rem 0 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+.tn-tlg-title-block { min-width: 0; flex: 1 1 22rem; }
+.tn-tlg-meta { display: flex; align-items: center; gap: .375rem; margin-bottom: .5rem; }
+.tn-tlg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  height: 1.5rem;
+  padding: 0 .6rem;
+  border-radius: var(--bs-border-radius);
+  font-size: .75rem;
+  font-weight: 600;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+}
+.tn-tlg-chip .tn-icon { width: .85rem; height: .85rem; }
+.tn-tlg-chip-id { font-family: var(--bs-font-monospace); color: var(--bs-body-color); }
+.tn-tlg-title { margin: 0; font-size: 1.375rem; font-weight: 600; line-height: 1.3; }
+.tn-tlg-note { margin: .5rem 0 0; max-width: 60rem; font-size: .8125rem; color: var(--bs-secondary-color); }
+.tn-tlg-actions { display: flex; flex-wrap: wrap; gap: .5rem; padding-top: .125rem; }
+.tn-tlg-action.btn { display: inline-flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.tn-tlg-action .tn-icon { width: 1.1em; height: 1.1em; }
+
+/* ---- Output ----------------------------------------------------------------- */
+.tn-tlg-output { min-height: 14rem; }
+.tn-tlg-scroll { overflow: auto; max-height: 72vh; }
+
+/* rtables output */
+.tn-tlg-rtable table { width: auto; min-width: 62%; margin: 0; font-size: .875rem; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tn-tlg-rtable th, .tn-tlg-rtable td { padding: .5rem .9rem; vertical-align: top; }
+.tn-tlg-rtable thead th, .tn-tlg-rtable tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bs-body-bg);
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+  font-size: .8125rem;
+}
+.tn-tlg-rtable tbody tr:hover { background: rgba(var(--bs-primary-rgb), .05); }
+
+/* Listings (DT): compact rows, no wrapping inside identifiers */
+.tn-tlg-output table.dataTable { font-size: .8125rem; font-variant-numeric: normal; }
+.tn-tlg-output table.dataTable td,
+.tn-tlg-output table.dataTable th { padding: .45rem .7rem; white-space: nowrap; }
+.tn-tlg-output .dataTables_scrollBody thead th,
+.tn-tlg-output .dt-scroll-body thead th { border-bottom: 0 !important; }
+.tn-tlg-output .dataTables_scrollHead table,
+.tn-tlg-output .dt-scroll-head table { margin-bottom: 0 !important; }
+
+/* Messages: a calm, centred state */
+.tn-tlg-message {
+  max-width: 40rem;
+  margin: 2.5rem auto;
+  padding: 1.75rem 2rem;
+  text-align: center;
+  border-radius: var(--bs-border-radius-lg);
+  background: var(--bs-tertiary-bg);
+}
+.tn-tlg-message h4 { margin: .5rem 0 .35rem; font-size: 1rem; font-weight: 600; }
+.tn-tlg-message p { margin: .35rem 0 0; color: var(--bs-secondary-color); font-size: .875rem; overflow-wrap: anywhere; }
+.tn-tlg-message-icon { display: inline-flex; width: 2.5rem; height: 2.5rem; align-items: center; justify-content: center; border-radius: 50%; }
+.tn-tlg-message-icon .tn-icon { width: 1.25rem; height: 1.25rem; }
+.tn-tlg-message-error .tn-tlg-message-icon { background: var(--bs-danger-bg-subtle); color: var(--bs-danger); }
+.tn-tlg-message-info .tn-tlg-message-icon { background: var(--bs-primary-bg-subtle); color: var(--bs-primary); }
+.tn-tlg-message-hint { font-size: .8125rem !important; }
+
+/* Code sheet */
+pre.tn-tlg-code { max-height: 62vh; overflow: auto; white-space: pre; margin: 0; }
+pre.tn-tlg-code code { padding: 0; }
+
+/* One page for the whole catalog: topic headings stay visible while scrolling,
+   the topic of the output is a chip, and "Open in Canvas" leads to the canvas. */
+.tn-tlg-group > .tn-tlg-group-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--tn-panel-2, var(--bs-tertiary-bg, #f8fafa));
+}
+.tn-tlg-chip-topic { text-transform: none !important; font-family: inherit !important; font-weight: 600 !important; }
+.tn-tlg-open.btn { font-weight: 600; }

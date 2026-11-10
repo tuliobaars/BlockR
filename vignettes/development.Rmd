@@ -1,0 +1,367 @@
+---
+title: "Development and testing"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Development and testing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+## Package layout
+
+| File | Purpose |
+|---|---|
+| `R/ingest.R` | Data sources, parquet import/export, data contract |
+| `R/preprocess.R` | Pre-processing per dataset (from the templates) |
+| `R/ae_dictionary.R` | Readable adverse event names |
+| `R/cm_dictionary.R` | Real medication names and ATC classes for ADCM |
+| `R/data_pipeline.R` | `load_blockr_data()`: pipeline + caches |
+| `R/teal_data.R` | `teal_data` object, reproducible code, join keys |
+| `R/blocks_graph.R` | Block graphs: R code to a graph of blocks, dependencies |
+| `R/blocks_compile.R` | Block graphs to R code (clean and block-by-block), formatting |
+| `R/blocks_run.R` | Running a graph block by block: cache, status of each block, column lists |
+| `R/blocks_registry.R` | The blocks the canvas knows: names, help, summaries, editors |
+| `R/blocks_sas.R` | Block graphs as SAS code (a translation; TODO for the rest) |
+| `R/canvas.R` | The canvas module (home page): UI, server, messages with the browser |
+| `R/app_modules.R` | Module configuration (one function per tab group) |
+| `R/app_filters.R` | Module-specific filters / starting populations |
+| `R/app_ui.R` | Header (logo, data badge, dark mode toggle), footer, favicon, asset dependency |
+| `R/plot_theme.R` | Plot defaults: `teal.ggplot2_args`, default ggplot2 theme of the plot modules |
+| `R/tlg_catalog.R` | TLG Catalog module: registry, page, runner, renderers |
+| `R/tlg_entries_*.R` | TLG Catalog outputs (one function per topic group) |
+| `R/run_app.R` | `blockr_app()`, `run_app()` |
+| `R/options.R` | `?blockr_options` |
+| `inst/www/` | Stylesheets, scripts (the canvas editor, colour mode, TLG Catalog list), logo, favicon and fonts |
+| `inst/templates/` | The original teal.gallery templates |
+| `app.R` | Launcher for RStudio "Run App" / Posit Connect |
+
+## Everyday workflow
+
+```{r}
+devtools::load_all()   # load the package from source
+run_app()
+
+devtools::document()   # regenerate man/ and NAMESPACE from roxygen comments
+devtools::test()       # run the test suite
+devtools::check()      # full R CMD check
+```
+
+## Adding or changing a module
+
+Modules live in `R/app_modules.R`, in the function of their tab group
+(`modules_exploratory()`, `modules_safety()`). Keep labels unique across the
+app: module-specific filters are keyed by label, and `blockr_modules()` stops
+if two modules share one. Safety modules automatically get their starting
+population (see `R/app_filters.R`).
+
+Exploratory plot modules are created with
+`blockr_plot_module(tm_g_..., <arguments>)` rather than a direct call: it
+adds the app's default ggplot2 theme (option `blockr.ggtheme`), but only when
+the installed module version has a matching theme argument, so a module API
+change cannot break the app.
+
+If a new module needs a dataset column that is not yet in the contract, add it
+to `adam_contract()`; if it pre-selects a value, add it to
+`adam_app_defaults()`.
+
+## Adding or changing a TLG Catalog output
+
+Each output is one `tlg()` entry in `R/tlg_entries_*.R`:
+
+```{r}
+tlg("AET02", "Adverse Events", "Table",
+    topic = "Adverse Events", slug = "adverse-events",
+    data = c("ADSL", "ADAE"),            # app datasets the code uses
+    code = r"--(
+library(tern)
+adsl <- ADSL %>% filter(SAFFL == "Y") %>% df_explicit_na()
+...
+result <- build_table(lyt, df = adae, alt_counts_df = adsl)
+)--")
+```
+
+The code is a plain string: it runs with teal's `eval_code()` on the page's
+filtered data (datasets in upper case: `ADSL`, `ADAE`, ...) and must create
+`result`: an rtables table, an rlistings listing, a data.frame, or a plot
+(ggplot2, grid or lattice). The same string is what "Show R code" shows. Use
+`BlockR::tlg_example_data("ADPC", adsl)` (and list the dataset in `extra`)
+for datasets the app does not load; list non-default packages in `packages`.
+
+`test-tlg-catalog.R` renders every output on the bundled data and lists the
+ones that fail with their error message (skip it with
+`Sys.setenv(BLOCKR_SKIP_TLG = "true")`).
+
+## The canvas
+
+### Graphs of blocks
+
+The canvas edits a *graph*: a plain list that travels as JSON between R and
+the browser (its fields are documented at the top of `R/blocks_graph.R`).
+Each node is a block: a dataset, a function call (`fn` and `args`, each
+argument R code or a reference to another block), an R expression or an R
+statement. A block can take the block above it as its `input` (a pipe step,
+or a ggplot2 layer added with `+`) and may be assigned to a variable (`name`).
+
+```{r}
+g <- blockr_graph_from_code(tlg_catalog()$AET02$code)
+cat(blockr_compile(g)$code)           # the same code again
+steps <- blockr_compile(g, "debug")   # one statement per block
+```
+
+Three rules keep code and blocks in step:
+
+* a pipe chain becomes a stack of blocks, and blocks stacked on top of each
+  other become a pipe chain again, assigned to the variable of its last named
+  block (a named block ends its chain, so the template's variables are kept);
+* a variable used as a whole argument becomes a wire (`ref`); inside a larger
+  expression it is an *implicit* dependency (`blockr_graph_deps()`), resolved
+  to the last assignment before the block;
+* statements run in dependency order, ties in the order of the original
+  code, so an unedited template runs exactly as written.
+
+`blockr_run()` evaluates the "debug" form block by block in an environment
+holding the datasets, and caches each block's value under a key made of its
+code and the keys of the blocks it depends on; the canvas empties the cache
+when the filtered data change. It returns the status of every block: its
+state (`ok`, `error`, `blocked`, `missing`), what it produced (`data`,
+`listing`, `table`, `layout`, `plot`, `value`), its size, its columns (for
+the column pickers, sent once per session) and its error.
+
+### The editor
+
+`inst/www/blockr_canvas.js` holds the graph in the browser. After every
+change it sends the graph (without the positions) as `input$graph`; R answers
+with the `blockr-status` message, and the Result and Block panels are
+ordinary Shiny outputs. Other messages: `input$ready` -> `blockr-data` (the
+datasets), `input$template` -> `blockr-graph` (a template's graph, with its
+implicit dependencies for the first layout), `input$code` (R code, JSON with
+`code`, `title` and `mode` "replace" or "add") -> `blockr-graph` (with `mode`
+and `source = "code"`) or `blockr-code-error` (the parse error, by line),
+`input$lang` ("r" / "sas": while it is "sas", R sends `blockr-sas` with the
+SAS code after every run), `input$selected`, `input$show_code`. Every
+message carries the canvas's namespace (`ns`), so the page's two canvases
+(yours and the tutorial's) each get their own. The canvas is saved in the
+browser's `localStorage`.
+
+Pasted code added to a canvas (`Editor.prototype.addGraph`) gets new block
+ids, reuses the datasets already on the canvas and renames variables that
+clash (`adsl` -> `adsl_2`), also in the new blocks' code after the block that
+defines them (before it, the name still means the canvas's variable).
+
+### SAS code
+
+`blockr_sas(graph, status = run$status)` writes the graph as SAS, chain by
+chain (`blockr_compile()`'s `chains`): the row-wise steps of a stack make one
+DATA step, order / unique rows a PROC SORT, count / summarise / joins PROC
+SQL; a table layout stack is read as columns, total column, row groups and
+analyses (`sas_layout()`), and Build table becomes PROC SQL / MEANS steps on
+the rows stacked once more for the total column, with N from the
+column-count data (`sas_table()`); listings become PROC REPORT, ggplot2
+stacks PROC SGPLOT / SGPANEL, `g_km()` PROC LIFETEST. R expressions are
+translated by `sas_expr()` (comparisons, `%in%`, `is.na`, `ifelse`,
+`paste`, `substr`, ...); `case_when()` and `cut()` become SELECT / WHEN.
+Anything else is kept as a TODO comment with its R code. The run's column
+types (`status`) tell numbers from categories (PROC MEANS or counts). To
+translate one more function, add it to `sas_expr()` (an expression),
+`sas_steps()` (a data step) or `sas_layout()` (a layout block), and a case
+to `tests/testthat/test-sas.R`.
+
+A block is drawn under its input when it is the only block using that input;
+otherwise it starts a stack of its own, with a wire. The output of a stack is
+its last block: a block added at the bottom takes over the stack's wires and
+variable, and deleting a block hands them back to the block above.
+
+### Adding a block to the palette
+
+Add a `bk_block()` entry to `R/blocks_registry.R`:
+
+```{r}
+bk_block(
+  "slice_head", "First rows", "prep", input = TRUE, palette = TRUE,
+  help = "Keeps the first rows (of each group).",
+  summary = "Keep the first {n} rows",
+  formals = c(".data", "...", "n", "prop", "by"),
+  args = list(bk_arg("n", "Rows", "number", main = TRUE)),
+  insert = bk_insert(n = "5")
+)
+```
+
+* `input = TRUE`: the block works on the result of the block above it;
+  `op = "+"` for ggplot2 layers.
+* `formals` lets the editor recognise unnamed arguments (the piped input
+  takes the first one).
+* `summary` is the line shown on the block: `{n}` is the argument's value
+  (or a red "…" when it is missing), `{?n}` the value if there is one,
+  `{n?text}` / `{n?!text}` a text shown only when `n` is set / not set,
+  `{...}` the unnamed arguments.
+* Editors: `column`, `columns`, `symbols`, `conditions`, `assign`, `labels`,
+  `text`, `number`, `bool`, `choice`, `strings`, `named`, `aes`, `data`,
+  `code` (see the top of the file).
+* `insert`: the settings of a new block taken from the palette.
+
+Templates need no registry entry: any function is a block, and its settings
+are edited as R code. `test-blocks.R` checks that every palette block
+compiles and that every template compiles without problems.
+
+### The tutorial
+
+The canvas page (`tm_blockr_canvas()`) holds two canvases: the user's
+(`main`) and the tutorial's (`tutorial`), each with its own server
+(`srv_blockr_canvas_app()`) and saved state; the Tutorial button switches the
+views (`showView()` in `blockr_canvas.js`). The tutorial's canvas has
+`tutorial: true` in its configuration, so the editor attaches
+`inst/www/blockr_tutorial.js` to it. The module turns teal's report and code
+buttons off (`blockr_without_teal_buttons()`, with teal's `disable_report()`
+/ `disable_src()` when available); if teal still draws them, the browser
+hides them and puts the Tutorial button there (`dockTutorial()`). The editor emits events
+(`change`, `status`, `graph`, `select`, `pane`, `tip`, `connected`; see
+`Editor.prototype.on`) and the tutorial re-checks the current step on each.
+
+A lesson is data:
+
+```js
+{
+  id: "filter", level: 0, title: "Keep only some rows",
+  intro: "...",
+  start: { graph: [{ dataset: "ADSL" }], title: "..." },  // or { code: "R code" }, { template: "AET02" }
+  steps: [{
+    text: "Add <b>Filter rows</b> below ADSL ...",
+    check: function (q) { return q.calls("filter").some(function (n) { return q.below(n, "ADSL"); }); },
+    show: palette('data-fn="filter"'),                      // what "Show me" points at
+    hint: "..."
+  }]
+}
+```
+
+Checks ask questions about the canvas (`q.calls(fn)`, `q.dataset(name)`,
+`q.below(block, dataset)`, `q.hasCond(block, col, op, value)`,
+`q.arg(block, formal)`, `q.dotsSymbols(block)`, `q.selected()`,
+`q.did("pane" | "tip" | "select", test)` for what happened since the step
+started, `q.memo()` for a step that needs two moments). `test-canvas.R`
+checks that every lesson starts from valid R code and existing templates.
+
+## Styling and the interactive layer
+
+The look lives in `inst/www/blockr.css` and the behaviour in
+`inst/www/blockr.js` (no dependencies). `inst/www/tlg_catalog.css` holds
+the layout of the TLG Catalog pages only (Bootstrap variables, no colours of
+its own); `blockr.css` skins those pages in its last section.
+
+The stylesheet redefines Bootstrap's CSS variables on top of teal's default
+theme instead of compiling a custom `bslib::bs_theme()`. That keeps bslib's
+precompiled CSS (no Sass compilation at start-up) and the app recognisably
+teal. Its tokens (`--tn-*`: type scale, spacing, radii, motion, canvas,
+panels, lines, ink levels, accent and signal colours) are defined once for
+both modes and per mode in the `html:not([data-bs-theme="dark"])` (light) and
+`html[data-bs-theme="dark"]` blocks. Appearance settings are attributes on
+`<html>` that override tokens (`data-tn-text`, `data-tn-density`,
+`data-tn-accent`, `data-tn-corners`, `data-tn-contrast`, `data-tn-canvas`);
+the current category is `data-tn-section` (set by the script), which picks
+the accent tokens of that category unless a fixed accent is chosen. Guidelines:
+
+* prefer changing a token or a `--bs-*` variable over styling a component;
+* dark-mode values go in the `html[data-bs-theme="dark"]` block;
+* selectors start with `html` when they must win over widget stylesheets that
+  load later (e.g. ionRangeSlider, selectize);
+* keep drawing cheap: no `backdrop-filter`, no background images, no
+  infinite animations; animate `transform`, `opacity` and colours only;
+* entrance animations use `backwards` fill (or end on `none`), so no
+  `transform` is left on a surface afterwards;
+* never set a font family inside plots (see `R/plot_theme.R`).
+
+`blockr.js` works from the page itself, so it does not depend on how teal
+builds its navigation:
+
+* **Navigation model**: every Bootstrap tab trigger (`data-bs-toggle="tab"`
+  or `"pill"`) and its chain of parent tabs and menus gives the path of a
+  view. Opening a view shows each tab of its chain in turn (Bootstrap's Tab
+  API). Elements that are not Bootstrap tabs are reached by clicking the
+  visible elements labelled with each part of the path.
+* **Index**: the header carries a JSON index (`blockr_index()` in
+  `R/app_ui.R`): the path and kind of every module and the ID, title, type and
+  topic of every TLG output. The command bar uses it for order, icons and the
+  outputs; without it, it indexes the tabs it finds.
+* **Views** are tracked from Bootstrap's `shown.bs.tab` events and clicks on
+  tabs and TLG outputs; each view updates the breadcrumb, the page title, the
+  address (`history.pushState`, a `#/` path of slugs) and the recent list
+  (`localStorage`). On load and on `popstate`, the `#/` path is opened.
+* **Status** uses Shiny's `shiny:busy` / `shiny:idle` events.
+* **Home page**: the canvas (kind `canvas` in the index); `H` and the logo
+  go there.
+* **Tools and pins** work on `.shiny-plot-output img` and on HTML tables
+  outside DataTables; pins are kept in memory for the session (images as data
+  URLs, tables as HTML).
+* Settings from R (`blockr.color_mode`, `blockr.motion`) arrive in
+  `window.blockr` through the inline script of the header dependency,
+  which also applies dark mode and the saved appearance before the first
+  paint.
+* **Start-up**: `blockr_app()` keeps the built app in `the$app_cache`
+  (keyed by `blockr_app_key()`: package version, data signature, look
+  options); `run_app()` wraps teal's UI with `blockr_fast_ui()`, which
+  serves the first page built for a plain request again. `tlg_catalog()` is
+  memoised. The build message breaks the time down by step.
+
+### Fonts
+
+The fonts are subsets converted to WOFF2 with
+[fontTools](https://github.com/fonttools/fonttools): Inter (the variable
+font, pinned to its text optical size; every weight) and JetBrains Mono
+(no-ligature cut). To rebuild them (e.g. for a newer Inter release), keep
+Latin, Greek, punctuation, arrows and mathematical operators:
+
+```sh
+UNICODES="U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0370-03FF,U+2000-206F,U+2070-209F,U+20AC,U+2122,U+2190-21FF,U+2200-22FF,U+2300-23FF,U+25A0-25FF,U+2713-2717,U+FEFF,U+FFFD"
+
+fonttools varLib.instancer InterVariable.ttf opsz=14 -o inter-text.ttf
+pyftsubset inter-text.ttf --flavor=woff2 --layout-features='*' --no-hinting \
+  --desubroutinize --output-file=InterVariable.woff2 --unicodes="$UNICODES"
+```
+
+JetBrains Mono uses the same `pyftsubset` command on
+`JetBrainsMonoNL-Regular.ttf` and `-Bold.ttf` (no instancer step; the
+unicode list adds box drawing, `U+2500-257F`). Licences and copyright notices
+are in `inst/www/fonts/OFL.txt` and `inst/COPYRIGHTS`.
+
+## Tests
+
+The suite (`tests/testthat/`) checks every step:
+
+| File | Covers |
+|---|---|
+| `test-ingest.R` | every source, synthetic settings and reproducibility, parquet naming and round trip |
+| `test-contract.R` | each rule of the data contract on tiny hand-made data |
+| `test-preprocess.R` | invariants of every derived dataset |
+| `test-ae-dictionary.R` | AE decoding (one-to-one, unknown codes, labels kept) |
+| `test-data-pipeline.R` | memory/disk/fresh caches, refresh, invalidation, global copies |
+| `test-teal-data.R` | datasets, join keys, reproducible code, error messages |
+| `test-app.R` | app builds without warnings, UI renders, labels, filter mapping, no third-party requests |
+| `test-speed.R` | page cache, app cache key, memoised registry, cache clearing |
+| `test-blocks.R` | block graphs: **every template round-trips** (code -> blocks -> code) and computes the same values block by block, compiling edited graphs, problems per block, formatting, the runner (sizes, errors, cache, packages, result), the registry, and (with tern) the canvas result of every template against the TLG Catalog's |
+| `test-canvas.R` | the canvas page and its configuration, the graph from the browser, template graphs, status messages, outputs, the server on the app's data |
+| `test-look.R` | assets and fonts, light and dark tokens, styles of the interactive layer, the script's wiring, options, header/footer, module index, icons, colour-mode script, plot defaults |
+| `test-tlg-catalog.R` | TLG Catalog registry, page, runner, and **every output on the bundled data** |
+
+**Consistency whatever the data.** The data invariants run on several
+*different* datasets - the bundled data, two synthetic draws of different size
+and seed, and a parquet round trip - so they test properties of the pipeline,
+not one snapshot. Run a subset with an environment variable:
+
+```{r}
+Sys.setenv(BLOCKR_TEST_SCENARIOS = "bundled")   # quick run
+devtools::test()
+```
+
+The parquet tests need *arrow* and are skipped without it. Tests use temporary
+cache folders and a throw-away memory cache; they never touch your real cache
+or Global Environment.
+
+## Deployment
+
+`app.R` at the project root loads the package with `pkgload::load_all()` and
+calls `run_app()`, so the project folder can be deployed as a Shiny app
+(e.g. `rsconnect::deployApp()`). `R/_disable_autoload.R` stops Shiny from also
+sourcing `R/` on its own.

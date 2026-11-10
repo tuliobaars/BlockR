@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+cache/*
+renv/*
+*.DS_Store*
+.git/*
+inst/doc
+/doc/
+/Meta/
+docs/
+__MACOSX/

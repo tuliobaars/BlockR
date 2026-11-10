@@ -1,0 +1,252 @@
+---
+title: "Getting started with BlockR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with BlockR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+**BlockR** is a drag-and-drop canvas on top of
+[teal](https://insightsengineering.github.io/teal/): it lets people who do
+not write R build clinical tables, listings and graphs from blocks, starting
+from any output of the
+[TLG Catalog](https://insightsengineering.github.io/tlg-catalog/stable/tlg-index.html).
+
+## Run the app
+
+```{r, eval = FALSE}
+library(BlockR)
+run_app()
+```
+
+From the project folder you can also open `app.R` in RStudio and press
+**Run App** (it loads the package with `pkgload` and calls `run_app()`).
+
+The first launch builds the data (a few seconds); later launches in the same
+R session are served from memory, and new sessions from the disk cache.
+
+## A tour of the app
+
+| Tab | What it shows | Starting population |
+|---|---|---|
+| Canvas | The home page: build outputs from blocks; its **Tutorial** button opens eight lessons on a canvas of their own | All subjects (each template filters its own population, with a block) |
+| TLG Catalog | Every table, listing and graph of the TLG Catalog, on one page | As in the catalog (per output) |
+| Data Table, Variable Browser | All datasets | All subjects |
+| Exploratory Analysis | Distributions, outliers, associations, regression, PCA, ... | All subjects |
+| Safety Analysis | Demographics, adverse events, labs, exposure, vitals, ECG, concomitant medication | Safety population (`SAFFL == "Y"`) |
+
+* **Filters.** Sex and age filters apply everywhere; each safety module also
+  starts on the safety population, as in its source template. On the canvas
+  the filter panel is folded at first (open it with `\`).
+* **Show R code** on any page gives runnable code (on the canvas, the
+  canvas's own *Show R code* button): it starts with
+  `BlockR::load_blockr_data()` with the data-source settings written out, so it
+  reproduces the same data in a fresh R session.
+* **Dark mode**: the sun/moon button in the header switches the whole app
+  between light and dark colours; the browser remembers your choice.
+
+## The canvas
+
+New to it? Press the bright **Tutorial** button at the top right of the
+canvas: eight short lessons, on a canvas of their own, from the first click
+(Beginner) to wiring a table by hand and writing a little R (Advanced). Each
+step is ticked as soon as you have done it; *Show me* points at what to use.
+*Back to my canvas* returns to yours, as you left it. And every part of the page and every block has a
+small **?**: click it to know what it is, or what the block does here.
+
+### Start
+
+On an empty canvas, pick one of the featured templates, *Browse all
+templates* (the *Templates* tab of the palette, searchable by ID or title),
+or *Start from a dataset*. On the TLG Catalog page, **Open in Canvas** does
+the same for the output you are looking at.
+
+### Read it
+
+* A **stack** of blocks is a pipeline, read from top to bottom: *ADAE*, then
+  *Filter rows* (SAFFL is Y and ANL01FL is Y), then *Show missing values*.
+  Each block works on the result of the block above it.
+* The footer of each block says what it produces: `1,586 rows · 98 cols`
+  (and `-348` when it removed rows), `table · 24 rows × 4 cols`, `plot`...
+* **Wires** bring the result of a stack to a block that uses it, for
+  example the rows, the layout and the column counts of *Build table*. The
+  number on a wire is the number of rows travelling on it.
+* The ★ **Result** block is the one shown in the *Result* panel: by default
+  the template's result (or the last table, listing or plot).
+* A block that has a problem turns red and says why; the blocks after it
+  wait, and everything else keeps working.
+
+### Change it
+
+* **Settings**: click a block. Its settings open in the *Block* panel, with
+  what the block produces below them. Conditions are rows of
+  *column · is · value* (the values of the column to choose from); columns
+  are tags; labels are pairs; anything else is R code.
+* **Add**: drag a block from the palette onto the canvas, between or below
+  blocks of a stack; or click it to add it below the selected block.
+* **+**: the button under a stack suggests what to do next with its result.
+  For rows: filter, derive, order, count, or a ready-made *Summary table by
+  arm*, *Patients per value by arm*, *Listing* or *Plot*, with all their
+  blocks added and wired; for a table layout: its columns, rows and
+  statistics, or *Build the table*; for a plot: layers.
+* **Move**: drag a block (the gap closes); shift-drag to take the blocks
+  below it too; drag the first block of a stack to move the whole stack.
+* **Connect**: drag from the round port under a stack to a socket (or click
+  a socket and choose).
+* **Bypass** (right-click, or the *Bypass* button): skip a block without
+  deleting it, for example to see the table without a filter.
+* **Undo** everything with `Ctrl+Z` (`Cmd+Z` on a Mac).
+
+### Make room
+
+The canvas fills the window below the header. Fold the palette (first
+toolbar button) or the right panel (next to last), drag the panel's left
+edge to resize it, or show the canvas **full screen** (last button; Esc
+leaves). The **?** buttons can be hidden: *Appearance* (the sliders in the
+header) → *"What is this?" tips* → Hide, or the `···` menu of the canvas.
+
+### Keep it
+
+The canvas is saved in your browser. Click its title to rename it; the `···`
+menu exports it as a file (to share it, or open it later with *Import*) and
+copies or downloads its R code. The *Code* panel shows the code of the canvas
+as you build it, and **Show R code** gives the complete script, including the
+loading of the data and the app's filters.
+
+### R and SAS code, both ways
+
+* The *Code* panel's **R / SAS** switch shows the canvas as SAS code: DATA
+  steps, PROC SQL, MEANS, REPORT, SGPLOT, LIFETEST. It is a translation for
+  SAS users: what has no SAS equivalent is marked `TODO` with its R code, and
+  the results should be checked against the R output. Copy and Download
+  follow the switch (`.sas`).
+* **Edit** (in the Code panel) turns the R code into a text box: change it
+  and press *Draw the blocks* (Ctrl/Cmd+Enter): the canvas is redrawn from
+  your code.
+* **Paste R code** (the `···` menu, the empty canvas, or simply Ctrl/Cmd+V on
+  the canvas): your own R code becomes blocks, replacing the canvas or added
+  to it. For example
+
+  ```r
+  adae <- ADAE %>% filter(AESER == "Y")
+  result <- adae %>% count(AEBODSYS, sort = TRUE)
+  ```
+
+  gives an *ADAE* block, a *Filter rows* block and a *Count rows* block.
+  If the code cannot be read, the line with the problem is shown.
+
+## The TLG Catalog
+
+The **TLG Catalog** page reproduces the outputs of the
+[TLG Catalog](https://insightsengineering.github.io/tlg-catalog/stable/tlg-index.html)
+on the app's data, grouped by topic (Adverse Events, Concomitant Medications,
+Lab Results, Efficacy, Pharmacokinetics, ...) in one searchable list. Select
+an output (click, or use the arrow keys) to compute it on the filtered data.
+
+* **Open in Canvas** turns the output into blocks.
+* **Show R code** gives the complete code: the data loading, the filters and
+  the output's code, written in the catalog's style (tern, rtables, rlistings).
+* **Catalog** opens the output's page in the TLG Catalog.
+* A few outputs need datasets the app does not load (ADPC, ADPP, ADAB, ADMH,
+  ADHY); they use the *random.cdisc.data* examples for the same patients, as
+  noted on their page.
+
+## The data in the console
+
+`run_app()` copies every analysis dataset into the Global Environment, so after
+closing the app you can explore them directly:
+
+```{r, eval = FALSE}
+head(ADSL)
+table(ADAE$AEDECOD)
+```
+
+Without the app:
+
+```{r, eval = FALSE}
+bk <- load_blockr_data(cache_global = TRUE)
+names(bk$datasets)
+```
+
+Turn the copy off with `options(blockr.cache_global = FALSE)` or
+`run_app(cache_global = FALSE)`.
+
+## Settings
+
+Everything is configured with R options (see `?blockr_options`) or the
+equivalent arguments of `run_app()`:
+
+```{r, eval = FALSE}
+# freshly generated synthetic data: 200 subjects, seed 7
+run_app(source = "synthetic", synthetic = list(N = 200, seed = 7))
+
+# your own ADaM data as parquet files
+run_app(source = "parquet", parquet_dir = "path/to/adam")
+
+# force a rebuild of the cached data
+options(blockr.refresh_cache = TRUE)
+```
+
+See `vignette("data-sources", package = "BlockR")` for the data sources, the
+data contract and the cache.
+
+## Look and feel
+
+The app keeps teal's structure and its standard Bootstrap 5 theme. A
+stylesheet and one script on top of it add:
+
+* **A home page**: the canvas; click the logo (or press `H`) to come back
+  to it.
+* **A command bar**: press `Ctrl+K` (`Cmd+K` on a Mac), `/`, or click the
+  search field in the header. Before you type, *Where to?* shows every
+  module in its category, nested as in the menus. Type a few letters of a module
+  (`km`, `ae grade`), a TLG output ID (`aet02`) or an action (`>dark`).
+  `Enter` opens it; `Ctrl/Cmd+Enter` opens it in a new browser tab.
+* **Where am I**: the header shows the path of the current module (for
+  example *Safety Analysis / Adverse Events / AE Summary*); click a part of it
+  to see the other modules of that group.
+* **Links to every view**: the address bar follows the app
+  (`.../#/safety-analysis/adverse-events/ae-summary`), so views can be bookmarked
+  and shared, and the browser's back button goes to the previous view.
+* **Output tools**: hover a plot to expand it (zoom with the wheel, drag to
+  pan), pin it, compare it, copy it or download it; hover a table to copy it
+  for Excel or download it as CSV.
+* **Comparison**: pin a plot, change a filter, then choose *Compare*: swipe
+  a divider between the two versions, put them side by side, or show their
+  difference (what changed keeps its colour, the rest turns white). Pins stay
+  in a tray (`P`) for the session.
+* **Keyboard shortcuts** for everything; press `?` to see them.
+* **A calm, precise look** ("Instrument"): ruled white panels on a dot-grid
+  canvas, one teal accent, the system font (Inter elsewhere) for text and
+  JetBrains Mono for dataset names, IDs and numbers; a quiet tint per
+  category (blue for Exploratory, terracotta for Safety, violet for the TLG
+  Catalog); a dark mode that works.
+* **Appearance** (the sliders button, or `A`): text size, spacing, accent,
+  corners, contrast, canvas and motion, remembered by the browser.
+* **Plots**: an editorial look for every ggplot2 module (large titles, facet
+  labels as headings, a graded ink scale, no tick marks) and
+  `theme_minimal()` as the default theme of the exploratory plots. Both are
+  applied through teal's own settings, so "Show R code" reproduces the plots
+  exactly. In dark mode, plots stay white paper.
+
+```{r, eval = FALSE}
+options(blockr.color_mode = "dark")  # default mode for first-time visitors ("light")
+options(blockr.motion = FALSE)       # no animations
+options(blockr.ggtheme = "bw")       # another default plot theme (NULL: module defaults)
+options(blockr.style = FALSE)        # the plain teal look of the source templates
+```
+
+To change the plot typography, set teal's own option, which BlockR then
+leaves alone:
+
+```{r, eval = FALSE}
+options(teal.ggplot2_args = teal.widgets::ggplot2_args(
+  labs = list(caption = "MY STUDY"),
+  theme = blockr_plot_theme_args()
+))
+```
