@@ -33,6 +33,28 @@ Catalog and exploratory / safety modules, with the canvas as its home page.
             Sort table rows  ★ Result  ->  the AET02 table, live
 ```
 
+<!-- taiga:begin -->
+## Feature tour
+
+| | | |
+|---|---|---|
+| ![A template as blocks](docs/features/01-canvas-template.jpg)<br>**A template as blocks** | ![Derived columns](docs/features/03-derived-columns.jpg)<br>**Derived columns** | ![Show R code](docs/features/04-code-r.jpg)<br>**Show R code** |
+| ![SAS translation](docs/features/05-code-sas.jpg)<br>**SAS translation** | ![Tutorial](docs/features/08-tutorial.jpg)<br>**Tutorial** | ![Dark mode](docs/features/09-dark-explain.jpg)<br>**Dark mode** |
+
+*Screenshots from a test bench built from this package's own UI code and assets (no R runtime was available where they were made). See [docs/DESIGN.md](docs/DESIGN.md#feature-screenshots).* All 9 screenshots, with captions: [docs/DESIGN.md](docs/DESIGN.md).
+
+### Delivery formats
+
+| Format | Status | Entry point |
+|---|---|---|
+| Shiny | ✓ | `run_app()`, `blockr_app()`, `app.R` |
+| Quarto | specified, not yet built | planned `blockr_export_quarto(canvas)` |
+| HTML | specified, not yet built | planned `blockr_export_html(canvas)` |
+
+Design system: **Neue** (minimalist, high-density enterprise). Styleguide, requirements and the Shiny · Quarto · HTML delivery model are in [`../taiga-design-system/`](../taiga-design-system/README.md); this project's page is [docs/DESIGN.md](docs/DESIGN.md).
+
+<!-- taiga:end -->
+
 ## What changed from teal_neue
 
 - **The canvas is the home page.** It replaces the App Info page and the
