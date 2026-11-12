@@ -1,0 +1,119 @@
+{
+ "app": "BlockR",
+ "framework": "neue",
+ "viewport": {
+  "width": 1440,
+  "height": 900
+ },
+ "device_scale_factor": 2,
+ "shots": [
+  {
+   "file": "01-canvas-template.jpg",
+   "title": "A template as blocks",
+   "caption": "AET02 on the canvas: stacks of blocks wired together, row counts on the wires, the selected filter in plain language.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 650377,
+   "captured": "2026-11-11T18:31:31Z"
+  },
+  {
+   "file": "02-canvas-start.jpg",
+   "title": "Start",
+   "caption": "An empty canvas: featured TLG templates, all 135 templates, or start from a dataset; the block palette on the left.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 478747,
+   "captured": "2026-11-11T18:31:19Z"
+  },
+  {
+   "file": "03-derived-columns.jpg",
+   "title": "Derived columns",
+   "caption": "AET01: the New columns block, its eleven derived flags editable as rows, and its output.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 609796,
+   "captured": "2026-11-11T18:31:47Z"
+  },
+  {
+   "file": "04-code-r.jpg",
+   "title": "Show R code",
+   "caption": "The canvas as complete, runnable R code, updated as you edit; edit the code and draw it back as blocks.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 614748,
+   "captured": "2026-11-11T18:31:33Z"
+  },
+  {
+   "file": "05-code-sas.jpg",
+   "title": "SAS translation",
+   "caption": "The same canvas as SAS (DATA steps, PROC SQL, PROC REPORT), for SAS users and double programming.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 630770,
+   "captured": "2026-11-11T18:31:35Z"
+  },
+  {
+   "file": "06-listing.jpg",
+   "title": "A listing",
+   "caption": "AEL02: the listing of adverse events as the canvas's result (rows shown from the bundled data).",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 551421,
+   "captured": "2026-11-11T18:32:00Z"
+  },
+  {
+   "file": "07-next-steps.jpg",
+   "title": "What next?",
+   "caption": "The + under a stack suggests next steps for its rows, including recipes that add and wire several blocks.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 389820,
+   "captured": "2026-11-11T18:32:11Z"
+  },
+  {
+   "file": "08-tutorial.jpg",
+   "title": "Tutorial",
+   "caption": "Eight lessons on a canvas of their own, from Meet the canvas to Derive your own column.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "light",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 441818,
+   "captured": "2026-11-11T18:32:18Z"
+  },
+  {
+   "file": "09-dark-explain.jpg",
+   "title": "Dark mode",
+   "caption": "The lifted slate dark palette; every block explains what it does here, what it works on and what uses it.",
+   "provenance": "bench",
+   "source": "bench: R/canvas.R, R/blocks_*.R, R/app_ui.R (webR, shim.R, blockr_standins.R) + inst/www/blockr*.{css,js}",
+   "theme": "dark",
+   "width": 2880,
+   "height": 1800,
+   "bytes": 624295,
+   "captured": "2026-11-11T18:32:31Z"
+  }
+ ]
+}

@@ -51,7 +51,7 @@ Catalog and exploratory / safety modules, with the canvas as its home page.
 | Quarto | specified, not yet built | planned `blockr_export_quarto(canvas)` |
 | HTML | specified, not yet built | planned `blockr_export_html(canvas)` |
 
-Design system: **Neue** (minimalist, high-density enterprise). Styleguide, requirements and the Shiny · Quarto · HTML delivery model are in [`../taiga-design-system/`](../taiga-design-system/README.md); this project's page is [docs/DESIGN.md](docs/DESIGN.md).
+Design system: **Neue** (minimalist, high-density enterprise), from the **taiga** R package in [`../taiga-design-system/`](../taiga-design-system/README.md): styleguide, requirements, tokens and the Shiny · Quarto · HTML delivery model (`taiga::taiga_guide()`, `taiga::taiga_export_html()`…). This project's page is [docs/DESIGN.md](docs/DESIGN.md).
 
 <!-- taiga:end -->
 
